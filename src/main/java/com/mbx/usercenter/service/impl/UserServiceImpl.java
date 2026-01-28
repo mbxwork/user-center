@@ -6,6 +6,7 @@ import com.mbx.usercenter.mapper.UserMapper;
 import com.mbx.usercenter.model.domain.User;
 import com.mbx.usercenter.service.UserService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -23,6 +24,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     private static final String SALT =  "1a2b3c4d";
 
+    //校验正则
+    private static final String validPattern =  "[a-zA-Z0-9]";
+
+    private static final String USER_LOGIN_STATE =  "userLoginState";
+
     @Resource
     private UserMapper userMapper;
 
@@ -39,7 +45,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return -1;
         }
         // 账户不能包含特殊字符
-        String validPattern = "[a-zA-Z0-9]";
         if (!userAccount.matches(validPattern)) {
             return -1;
         }
@@ -67,6 +72,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return -1;
         }
         return user.getId();
+    }
+
+    @Override
+    public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+        // 1. 校验
+        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
+            return null;
+        }
+        if (userAccount.length() < 4) {
+            return null;
+        }
+        if (userPassword.length() < 8) {
+            return null;
+        }
+        // 账户不能包含特殊字符
+        if (!userAccount.matches(validPattern)) {
+            return null;
+        }
+        //校验用户是否存在
+        User user = userMapper.selectOne(new QueryWrapper<>(new User()).eq("userAccount", userAccount));
+        if (user == null){
+            return null;
+        }
+
+        //用户脱敏
+        User safeUser = new User();
+        safeUser.setId(user.getId());
+        safeUser.setUsername(user.getUsername());
+        safeUser.setUserAccount(user.getUserAccount());
+        safeUser.setAvatarUrl(user.getAvatarUrl());
+        safeUser.setGender(user.getGender());
+        safeUser.setPhone(user.getPhone());
+        safeUser.setEmail(user.getEmail());
+        safeUser.setUserStatus(user.getUserStatus());
+        safeUser.setCreateTime(user.getCreateTime());
+        safeUser.setUpdateTime(user.getUpdateTime());
+        safeUser.setUserRole(user.getUserRole());
+
+        //记录用户登陆状态
+        request.getSession().setAttribute(USER_LOGIN_STATE, safeUser);
+
+        return user;
     }
 }
 

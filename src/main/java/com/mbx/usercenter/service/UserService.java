@@ -1,7 +1,8 @@
 package com.mbx.usercenter.service;
 
-import com.mbx.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.mbx.usercenter.model.domain.User;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author mbx
@@ -20,4 +21,14 @@ public interface UserService extends IService<User> {
      */
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
+
+    /**
+     * 用户登录
+     *
+     * @param userAccount  用户账户
+     * @param userPassword 用户密码
+     * @param request       请求
+     * @return 脱敏后的用户信息
+     */
+    User userLogin(String userAccount, String userPassword, HttpServletRequest request);
 }
