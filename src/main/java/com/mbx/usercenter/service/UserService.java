@@ -31,4 +31,14 @@ public interface UserService extends IService<User> {
      * @return 脱敏后的用户信息
      */
     User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+
+    /**
+     * 用户数据脱敏
+     */
+    User userMasking(User user);
+
+    /**
+     * 是否为管理员
+     */
+    boolean isAdmin(HttpServletRequest request);
 }

@@ -47,4 +47,15 @@ class UserServiceTest {
         System.out.println(encryptPassword);
     }
 
+    @Test
+    void userRegister() {
+        String userAccount = "mbxTest";
+        String userPassword = "12345678";
+        String checkPassword = "12345678";
+        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+    }
+
+    @Test
+    void userLogin() {
+    }
 }

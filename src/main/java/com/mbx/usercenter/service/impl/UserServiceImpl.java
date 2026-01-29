@@ -13,6 +13,9 @@ import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.mbx.usercenter.constant.UserConstant.*;
+
+
 /**
  * @author mbx
  * @description 针对表【user(用户表)】的数据库操作Service实现
@@ -23,11 +26,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
     private static final String SALT =  "1a2b3c4d";
-
-    //校验正则
-    private static final String validPattern =  "[a-zA-Z0-9]";
-
-    private static final String USER_LOGIN_STATE =  "userLoginState";
 
     @Resource
     private UserMapper userMapper;
@@ -45,7 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return -1;
         }
         // 账户不能包含特殊字符
-        if (!userAccount.matches(validPattern)) {
+        if (!userAccount.matches(VALID_PATTERN)) {
             return -1;
         }
 
@@ -87,7 +85,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return null;
         }
         // 账户不能包含特殊字符
-        if (!userAccount.matches(validPattern)) {
+        if (!userAccount.matches(VALID_PATTERN)) {
             return null;
         }
         //校验用户是否存在
@@ -97,6 +95,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         //用户脱敏
+        User safeUser = userMasking(user);
+
+        //记录用户登陆状态
+        request.getSession().setAttribute(USER_LOGIN_STATE, safeUser);
+
+        return user;
+    }
+
+    /**
+     * 用户数据脱敏
+     */
+    @Override
+    public User userMasking(User user) {
         User safeUser = new User();
         safeUser.setId(user.getId());
         safeUser.setUsername(user.getUsername());
@@ -109,11 +120,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setCreateTime(user.getCreateTime());
         safeUser.setUpdateTime(user.getUpdateTime());
         safeUser.setUserRole(user.getUserRole());
+        return safeUser;
+    }
 
-        //记录用户登陆状态
-        request.getSession().setAttribute(USER_LOGIN_STATE, safeUser);
-
-        return user;
+    @Override
+    public boolean isAdmin(HttpServletRequest request) {
+        Object user = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (user != null) {
+            User currentUser = (User) user;
+            return currentUser.getUserRole() == ADMIN_ROLE;
+        }
+        return false;
     }
 }
 
