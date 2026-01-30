@@ -2,6 +2,8 @@ package com.mbx.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.mbx.usercenter.common.ErrorCode;
+import com.mbx.usercenter.exception.BusinessException;
 import com.mbx.usercenter.mapper.UserMapper;
 import com.mbx.usercenter.model.domain.User;
 import com.mbx.usercenter.service.UserService;
@@ -34,28 +36,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         if (userAccount.length() < 4) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         // 账户不能包含特殊字符
         if (!userAccount.matches(VALID_PATTERN)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         //账户不能重复
         long result = userMapper.selectCount(new QueryWrapper<>(new User()).eq("userAccount", userAccount));
         if (result > 0){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户不能重复");
         }
 
         // 2. 加密
@@ -67,7 +69,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         boolean saveResult = this.save(user);
         if (!saveResult){
-            return -1;
+            throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         return user.getId();
     }
@@ -76,22 +78,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         if (userAccount.length() < 4) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         if (userPassword.length() < 8) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         // 账户不能包含特殊字符
         if (!userAccount.matches(VALID_PATTERN)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //校验用户是否存在
         User user = userMapper.selectOne(new QueryWrapper<>(new User()).eq("userAccount", userAccount));
         if (user == null){
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         //用户脱敏
@@ -108,6 +110,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public User userMasking(User user) {
+        if(user == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         User safeUser = new User();
         safeUser.setId(user.getId());
         safeUser.setUsername(user.getUsername());
@@ -131,6 +136,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return currentUser.getUserRole() == ADMIN_ROLE;
         }
         return false;
+    }
+
+    @Override
+    public void userLoginOut(HttpServletRequest request) {
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
     }
 }
 

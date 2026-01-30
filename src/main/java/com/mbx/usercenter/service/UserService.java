@@ -41,4 +41,10 @@ public interface UserService extends IService<User> {
      * 是否为管理员
      */
     boolean isAdmin(HttpServletRequest request);
+
+
+    /**
+     * 用户登出
+     */
+    void userLoginOut(HttpServletRequest request);
 }
